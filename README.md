@@ -8,13 +8,6 @@ Notes:
   - after every week, done tasks will be deleted 
 
 Weekly to do's: 
-Week 3: perform data pretreatment 
-  - incorporation of the feedback; adjust pretreatment plan
-  - split set into: calibration, validation and test
-  - data centering and scaling techniques
-  - evaluation and handeling of outliers or missing values
-  - data synchronizing and sampling
-
 Week 4: Create modelling plan 
   - modelling goal (What's our task/purpose?)
   - model calibration strategy: used tools, methodology and data
