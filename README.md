@@ -4,20 +4,10 @@ Mining Process Level A3
 --add project description-- #
 
 Notes: 
-  - Week 4 and 6 will be heavy
+  - Week 6 will be heavy
   - after every week, done tasks will be deleted 
 
 Weekly to do's: 
-Week 4: Create modelling plan 
-  - modelling goal (What's our task/purpose?)
-  - model calibration strategy: used tools, methodology and data
-  - model validation strategy: scope of validation, methodology
-  - model testing strategy: metrics and data used
-  - description of the mathematical methods used in modeling
-  - model diagram/ operations flowchart (if more than one modelling goal: multiple paths in flowchart) 
-  - role group members in modelling
-  - document appearance: readability, figures and caputures, clarity and completness
-
 Week 5: Give feedback to other models 
   Possible feedback options: 
     - pointing out mistakes
