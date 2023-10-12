@@ -161,3 +161,11 @@ cython_debug/
 
 dataset.csv
 .~lock.dataset.csv#
+Flotation Column 05 Level-Flotation Column 06 Level.txt
+% Iron Feed-Flotation Column 01 Level.txt
+Flotation Column 01 Level-Flotation Column 02 Level.txt
+Flotation Column 02 Level-Flotation Column 03 Level.txt
+Flotation Column 03 Level-Flotation Column 04 Level.txt
+Flotation Column 04 Level-Flotation Column 05 Level.txt
+Flotation Column 06 Level-Flotation Column 07 Level.txt
+test.py
