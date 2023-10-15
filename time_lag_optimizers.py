@@ -24,8 +24,10 @@ class TimeLagOptimizer:
             "Flotation Column 05 Level",
             "Flotation Column 06 Level",
             "Flotation Column 07 Level",
-            # "y"
+            "y"
         ]
+        self.all_boundaries = list(zip(self.boundaries[:-1], self.boundaries[1:]))
+        self.result_count = len(self.all_boundaries)
         self.csv_header = "train_loss,valid_loss\n"
 
     def _optimize(self, train_x: pd.DataFrame, train_y: pd.DataFrame, valid_x: pd.DataFrame, valid_y: pd.DataFrame):
@@ -123,14 +125,8 @@ class VerticalStairsOptimizer(TimeLagOptimizer):
 
 
 
-def switch(dir):
-    if dir == 1:
-        return -1
-    return 1
 
-def applyShifts(df_x, df_y, shifts, all_boundaries):
-    for i, (column_begin, column_end) in enumerate(all_boundaries):
-        shift(df_x, df_y, shifts[i], column_begin, column_end)
+
 
 class DynamicOptimizer(TimeLagOptimizer):
     def __init__(self, step: int, upper_lag_boundary: int, out_folder: str | None = None) -> None:
@@ -163,23 +159,20 @@ class DynamicOptimizer(TimeLagOptimizer):
     def _optimize(self, train_x: pd.DataFrame, train_y: pd.DataFrame, valid_x: pd.DataFrame, valid_y: pd.DataFrame):
         n_components = train_x.shape[1]
         self.loggerReset()
-
-        all_boundaries = list(zip(self.boundaries[:-1], self.boundaries[1:]))
-        results_count = len(all_boundaries)
-        directions = np.ones((results_count))
-        steps = np.array([self.step for _ in range(results_count)], dtype=np.float64)
+        directions = np.ones((self.results_count))
+        steps = np.array([self.step for _ in range(self.results_count)], dtype=np.float64)
 
         # let's assume that one flotation phase should take 15 minutes
         # https://www.chem.mtu.edu/chem_eng/faculty/kawatra/Flotation_Fundamentals.pdf
         phase_length = 3
-        preliminary_results = np.array([(results_count-i) * phase_length for i in range(results_count)])
+        preliminary_results = np.array([(self.results_count-i) * phase_length for i in range(self.results_count)])
 
-        last_valid_scores = np.zeros((results_count))
-        train_scores = np.zeros((results_count))
-        valid_scores = np.zeros((results_count))
+        last_valid_scores = np.zeros((self.results_count))
+        train_scores = np.zeros((self.results_count))
+        valid_scores = np.zeros((self.results_count))
 
         # initialize preliminary values
-        for i, (column_begin, column_end) in enumerate(all_boundaries):
+        for i, (column_begin, column_end) in enumerate(self.all_boundaries):
             x_working_copy = train_x.copy()
             y_working_copy = train_y.copy()
             shift(x_working_copy, y_working_copy, preliminary_results[i], column_begin, column_end)
@@ -196,10 +189,10 @@ class DynamicOptimizer(TimeLagOptimizer):
         while True:
             x_progress = train_x.copy()
             y_progress = train_y.copy()
-            applyShifts(x_progress, y_progress, preliminary_results, all_boundaries)
+            applyShifts(x_progress, y_progress, preliminary_results, self.all_boundaries)
 
             # determine model improvements over potential lag shifts
-            for i, (column_begin, column_end) in enumerate(all_boundaries):
+            for i, (column_begin, column_end) in enumerate(self.all_boundaries):
                 id = f"{column_begin} - {column_end}"
 
                 x_working_copy = x_progress.copy()
@@ -214,7 +207,7 @@ class DynamicOptimizer(TimeLagOptimizer):
                 tmp_valid_y = valid_y.copy()
                 s = preliminary_results
                 s[i] += self.step * directions[i]
-                applyShifts(tmp_valid_x, tmp_valid_y, s, all_boundaries)
+                applyShifts(tmp_valid_x, tmp_valid_y, s, self.all_boundaries)
 
                 pred_train = model.predict(x_working_copy).flatten()
                 pred_valid = model.predict(tmp_valid_x).flatten()
@@ -304,6 +297,7 @@ class DynamicOptimizerOneAtATime(TimeLagOptimizer):
             # evaluate performance
             last_valid_score = self.evaluate(valid_y, pred_valid)
 
+        print(last_valid_score)
         # preliminary_results += steps
         x_progress = train_x.copy()
         y_progress = train_y.copy()
@@ -355,13 +349,6 @@ class DynamicOptimizerOneAtATime(TimeLagOptimizer):
                 self.logLossesValid([valid_score])
                 self.logLossesTrain([train_score])
                 self.logResults(preliminary_results)
-
-            # scale to best improvement
-            # diff = last_valid_scores-valid_scores
-            # if np.abs(diff).sum() != 0:
-            #     steps = np.abs(np.round(diff / diff.sum() * self.step,0))
-            # else:
-            #     break
 
         return preliminary_results
 
