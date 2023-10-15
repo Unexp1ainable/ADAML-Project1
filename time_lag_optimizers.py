@@ -167,11 +167,11 @@ class DynamicOptimizer(TimeLagOptimizer):
         all_boundaries = list(zip(self.boundaries[:-1], self.boundaries[1:]))
         results_count = len(all_boundaries)
         directions = np.ones((results_count))
-        steps = np.array([self.step for _ in range(results_count)], dtype=np.int32)
+        steps = np.array([self.step for _ in range(results_count)], dtype=np.float64)
 
         # let's assume that one flotation phase should take 15 minutes
         # https://www.chem.mtu.edu/chem_eng/faculty/kawatra/Flotation_Fundamentals.pdf
-        phase_length = 12 * 60
+        phase_length = 3
         preliminary_results = np.array([(results_count-i) * phase_length for i in range(results_count)])
 
         last_valid_scores = np.zeros((results_count))
@@ -229,11 +229,11 @@ class DynamicOptimizer(TimeLagOptimizer):
             self.logResults(preliminary_results)
 
             # scale to best improvement
-            diff = last_valid_scores-valid_scores
-            if np.abs(diff).sum() != 0:
-                steps = np.abs(np.round(diff / diff.sum() * self.step,0))
-            else:
-                break
+            # diff = last_valid_scores-valid_scores
+            # if np.abs(diff).sum() != 0:
+            #     steps = np.abs(np.round(diff / diff.sum() * self.step,0))
+            # else:
+            #     break
 
             steps *= directions
             preliminary_results += steps.astype(np.int64)

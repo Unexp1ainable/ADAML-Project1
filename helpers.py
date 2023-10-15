@@ -14,7 +14,6 @@ def reorder_cols(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def shift(df_x: pd.DataFrame, df_y: pd.DataFrame, step: int, column_begin: str, column_end : str | None = None):
-    step = step // 20
     index_begin = df_x.columns.get_loc(column_begin)
     index_end = None
 
