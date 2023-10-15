@@ -202,8 +202,8 @@ class DynamicOptimizer(TimeLagOptimizer):
             for i, (column_begin, column_end) in enumerate(all_boundaries):
                 id = f"{column_begin} - {column_end}"
 
-                x_working_copy = train_x.copy()
-                y_working_copy = train_y.copy()
+                x_working_copy = x_progress.copy()
+                y_working_copy = y_progress.copy()
 
                 shift(x_working_copy, y_working_copy, int(preliminary_results[i]+self.step*directions[i]), column_begin, column_end)
 
@@ -245,5 +245,124 @@ class DynamicOptimizer(TimeLagOptimizer):
         return preliminary_results
 
 
+
+
+
+class DynamicOptimizerOneAtATime(TimeLagOptimizer):
+    def __init__(self, step: int, upper_lag_boundary: int, out_folder: str | None = None) -> None:
+        super().__init__(step, upper_lag_boundary, out_folder)
+        
+        all_boundaries = list(zip(self.boundaries[:-1], self.boundaries[1:]))
+        self.csv_header = ",".join(map(lambda x: "-".join([x[0],x[1]]), all_boundaries)) + "\n"
+        self.valid_loss_file = "losses_valid.csv"
+        self.train_loss_file = "losses_train.csv"
+        self.results_file = "results.csv"
+
+    def loggerReset(self):
+        super().loggerReset(self.valid_loss_file)
+        super().loggerReset(self.train_loss_file)
+        super().loggerReset(self.results_file)
+
+
+    def logResults(self, results):
+        with open(f"{self.out_folder}/{self.results_file}", "a") as file:
+            file.write(",".join(map(str, results)) + "\n")
+
+    def logLossesTrain(self, losses):
+        with open(f"{self.out_folder}/{self.train_loss_file}", "a") as file:
+            file.write(",".join(map(str, losses)) + "\n")
+
+    def logLossesValid(self, losses):
+        with open(f"{self.out_folder}/{self.valid_loss_file}", "a") as file:
+            file.write(",".join(map(str, losses)) + "\n")
+
+    def _optimize(self, train_x: pd.DataFrame, train_y: pd.DataFrame, valid_x: pd.DataFrame, valid_y: pd.DataFrame):
+        n_components = train_x.shape[1]
+        self.loggerReset()
+
+        all_boundaries = list(zip(self.boundaries[:-1], self.boundaries[1:]))
+        results_count = len(all_boundaries)
+        directions = np.ones((results_count))
+
+        # let's assume that one flotation phase should take 3 hours
+        phase_length = 0
+        preliminary_results = np.array([(results_count-i) * phase_length for i in range(results_count)])
+
+        last_valid_score = 0
+
+        # initialize preliminary values
+        for i, (column_begin, column_end) in enumerate(all_boundaries):
+            x_working_copy = train_x.copy()
+            y_working_copy = train_y.copy()
+            shift(x_working_copy, y_working_copy, preliminary_results[i], column_begin, column_end)
+
+            model = PLSRegression(n_components=n_components)
+            model.fit(x_working_copy, y_working_copy)
+
+            pred_valid = model.predict(valid_x).flatten()
+
+            # evaluate performance
+            last_valid_score = self.evaluate(valid_y, pred_valid)
+
+        # preliminary_results += steps
+        x_progress = train_x.copy()
+        y_progress = train_y.copy()
+        turns = 0
+        while turns < 50:
+            # applyShifts(x_progress, y_progress, preliminary_results, all_boundaries)
+
+            # determine model improvements over potential lag shifts
+            for i, (column_begin, column_end) in enumerate(all_boundaries):
+                if (preliminary_results[i]+self.step*directions[i]) < 0:
+                    directions[i] = switch(directions[i])
+                    continue
+
+                x_working_copy = x_progress.copy()
+                y_working_copy = y_progress.copy()
+
+                shift(x_working_copy, y_working_copy, int(preliminary_results[i]+self.step*directions[i]), column_begin, column_end)
+
+                model = PLSRegression(n_components=n_components)
+                model.fit(x_working_copy, y_working_copy)
+
+                tmp_valid_x = valid_x.copy()
+                tmp_valid_y = valid_y.copy()
+                s = preliminary_results.copy()
+                s[i] += self.step * directions[i]
+                applyShifts(tmp_valid_x, tmp_valid_y, s, all_boundaries)
+
+                pred_train = model.predict(x_working_copy).flatten()
+                pred_valid = model.predict(tmp_valid_x).flatten()
+
+                # evaluate performance
+                train_score = self.evaluate(y_working_copy, pred_train)
+                valid_score = self.evaluate(tmp_valid_y, pred_valid)
+
+                # if model improved, keep going, otherwise turn back
+                if last_valid_score - valid_score < 0:
+                    # turn back
+                    directions[i] = switch(directions[i])
+                    turns += 1
+                else:
+                    turns = 0
+                    # make step
+                    preliminary_results[i] += self.step*directions[i]
+                    print(valid_score)
+                    last_valid_score = valid_score
+                    x_progress = x_working_copy
+                    y_progress = y_working_copy
+
+                self.logLossesValid([valid_score])
+                self.logLossesTrain([train_score])
+                self.logResults(preliminary_results)
+
+            # scale to best improvement
+            # diff = last_valid_scores-valid_scores
+            # if np.abs(diff).sum() != 0:
+            #     steps = np.abs(np.round(diff / diff.sum() * self.step,0))
+            # else:
+            #     break
+
+        return preliminary_results
 
 
