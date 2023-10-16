@@ -8,13 +8,6 @@ Notes:
   - after every week, done tasks will be deleted 
 
 Weekly to do's: 
-Week 5: Give feedback to other models 
-  Possible feedback options: 
-    - pointing out mistakes
-    - point out confusing things, we don't understand 
-    - maybe improvements to the methodology
-    - point out alternative ways 
-
 Week 6: Initial model results 
   (we get some extra points because  our task is more difficult) 
   - incorporate feedback of week 5
