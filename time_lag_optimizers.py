@@ -14,19 +14,17 @@ class TimeLagOptimizer:
         self.upper_lag_boundary = upper_lag_boundary
         self.out_folder = out_folder
         self.results = None
-        self.boundaries = [
-            "% Iron Feed",
-            "Ore Pulp Density",
-            "Flotation Column 01 Level",
-            "Flotation Column 02 Level",
-            "Flotation Column 03 Level",
-            "Flotation Column 04 Level",
-            "Flotation Column 05 Level",
-            "Flotation Column 06 Level",
-            "Flotation Column 07 Level",
-            "y"
-        ]
-        self.all_boundaries = list(zip(self.boundaries[:-1], self.boundaries[1:]))
+        self.all_boundaries = [
+                ["% Iron Feed", 'Ore Pulp Density'], 
+                ['Flotation Column 01 Air Flow', 'Flotation Column 01 Level'],
+                ['Flotation Column 02 Air Flow', 'Flotation Column 02 Level'],
+                ['Flotation Column 03 Air Flow', 'Flotation Column 03 Level'],
+                ['Flotation Column 04 Air Flow', 'Flotation Column 04 Level'],
+                ['Flotation Column 05 Air Flow', 'Flotation Column 05 Level'],
+                ['Flotation Column 06 Air Flow', 'Flotation Column 06 Level'],
+                ['Flotation Column 07 Air Flow', 'Flotation Column 07 Level'],
+                ['Lagged Silica Content', 'Lagged Silica Content']
+                ]
         self.result_count = len(self.all_boundaries)
         self.csv_header = "train_loss,valid_loss\n"
 
@@ -78,7 +76,7 @@ class VerticalStairsOptimizer(TimeLagOptimizer):
         optimal_y_working_copy = train_y.copy()
         optimal_lags = []
 
-        for column_begin, column_end in zip(self.boundaries[:-1], self.boundaries[1:]):
+        for column_begin, column_end in self.all_boundaries:
             id = f"{column_begin} - {column_end}"
             self.loggerReset(f"{id}.csv")
             print(f"Processing \"{id}\"")
@@ -132,8 +130,7 @@ class DynamicOptimizer(TimeLagOptimizer):
     def __init__(self, step: int, upper_lag_boundary: int, out_folder: str | None = None) -> None:
         super().__init__(step, upper_lag_boundary, out_folder)
         
-        all_boundaries = list(zip(self.boundaries[:-1], self.boundaries[1:]))
-        self.csv_header = ",".join(map(lambda x: "-".join([x[0],x[1]]), all_boundaries)) + "\n"
+        self.csv_header = ",".join(map(lambda x: "-".join([x[0],x[1]]), self.all_boundaries)) + "\n"
         self.valid_loss_file = "losses_valid.csv"
         self.train_loss_file = "losses_train.csv"
         self.results_file = "results.csv"
@@ -245,8 +242,7 @@ class DynamicOptimizerOneAtATime(TimeLagOptimizer):
     def __init__(self, step: int, upper_lag_boundary: int, out_folder: str | None = None) -> None:
         super().__init__(step, upper_lag_boundary, out_folder)
         
-        all_boundaries = list(zip(self.boundaries[:-1], self.boundaries[1:]))
-        self.csv_header = ",".join(map(lambda x: "-".join([x[0],x[1]]), all_boundaries)) + "\n"
+        self.csv_header = ",".join(map(lambda x: "-".join([x[0],x[1]]), self.all_boundaries)) + "\n"
         self.valid_loss_file = "losses_valid.csv"
         self.train_loss_file = "losses_train.csv"
         self.results_file = "results.csv"
@@ -273,18 +269,17 @@ class DynamicOptimizerOneAtATime(TimeLagOptimizer):
         n_components = train_x.shape[1]
         self.loggerReset()
 
-        all_boundaries = list(zip(self.boundaries[:-1], self.boundaries[1:]))
-        results_count = len(all_boundaries)
+        results_count = len(self.all_boundaries)
         directions = np.ones((results_count))
 
         # let's assume that one flotation phase should take 3 hours
-        phase_length = 0
+        phase_length = 1
         preliminary_results = np.array([(results_count-i) * phase_length for i in range(results_count)])
 
         last_valid_score = 0
 
         # initialize preliminary values
-        for i, (column_begin, column_end) in enumerate(all_boundaries):
+        for i, (column_begin, column_end) in enumerate(self.all_boundaries):
             x_working_copy = train_x.copy()
             y_working_copy = train_y.copy()
             shift(x_working_copy, y_working_copy, preliminary_results[i], column_begin, column_end)
@@ -306,7 +301,7 @@ class DynamicOptimizerOneAtATime(TimeLagOptimizer):
             # applyShifts(x_progress, y_progress, preliminary_results, all_boundaries)
 
             # determine model improvements over potential lag shifts
-            for i, (column_begin, column_end) in enumerate(all_boundaries):
+            for i, (column_begin, column_end) in enumerate(self.all_boundaries):
                 if (preliminary_results[i]+self.step*directions[i]) < 0:
                     directions[i] = switch(directions[i])
                     continue
@@ -323,7 +318,7 @@ class DynamicOptimizerOneAtATime(TimeLagOptimizer):
                 tmp_valid_y = valid_y.copy()
                 s = preliminary_results.copy()
                 s[i] += self.step * directions[i]
-                applyShifts(tmp_valid_x, tmp_valid_y, s, all_boundaries)
+                applyShifts(tmp_valid_x, tmp_valid_y, s, self.all_boundaries)
 
                 pred_train = model.predict(x_working_copy).flatten()
                 pred_valid = model.predict(tmp_valid_x).flatten()

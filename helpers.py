@@ -10,7 +10,7 @@ def reorder_cols(df: pd.DataFrame) -> pd.DataFrame:
                 'Flotation Column 05 Air Flow', 'Flotation Column 05 Level',
                 'Flotation Column 06 Air Flow', 'Flotation Column 06 Level',
                 'Flotation Column 07 Air Flow', 'Flotation Column 07 Level',
-                'y'
+                'Lagged Silica Content'
                 ]]
 
 
