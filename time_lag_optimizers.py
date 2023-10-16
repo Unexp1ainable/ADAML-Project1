@@ -9,6 +9,9 @@ import pandas as pd
 
 
 class TimeLagOptimizer:
+    """Base class for the optimizers
+    """
+
     def __init__(self, step: int, upper_lag_boundary: int, out_folder: None | str = None) -> None:
         self.step = step
         self.upper_lag_boundary = upper_lag_boundary
@@ -37,6 +40,14 @@ class TimeLagOptimizer:
 
     @staticmethod
     def should_stop(scores: list[float]) -> bool:
+        """Evaluate early stopping. If last 10 scores were increasing, say yes
+
+        Args:
+            scores (list[float]): scores
+
+        Returns:
+            bool: true if should stop
+        """
         N_TO_STOP = 10
         if len(scores) < N_TO_STOP:
             return False
@@ -69,6 +80,8 @@ class TimeLagOptimizer:
 
 
 class VerticalStairsOptimizer(TimeLagOptimizer):
+    """One of not workings
+    """
     def _optimize(self, train_x: pd.DataFrame, train_y: pd.DataFrame, valid_x: pd.DataFrame, valid_y: pd.DataFrame):
         n_components = train_x.shape[1]
 
@@ -127,6 +140,8 @@ class VerticalStairsOptimizer(TimeLagOptimizer):
 
 
 class DynamicOptimizer(TimeLagOptimizer):
+    """Another bad one
+    """
     def __init__(self, step: int, upper_lag_boundary: int, out_folder: str | None = None) -> None:
         super().__init__(step, upper_lag_boundary, out_folder)
         
@@ -239,6 +254,8 @@ class DynamicOptimizer(TimeLagOptimizer):
 
 
 class DynamicOptimizerOneAtATime(TimeLagOptimizer):
+    """final one
+    """
     def __init__(self, step: int, upper_lag_boundary: int, out_folder: str | None = None) -> None:
         super().__init__(step, upper_lag_boundary, out_folder)
         
@@ -293,15 +310,13 @@ class DynamicOptimizerOneAtATime(TimeLagOptimizer):
             last_valid_score = self.evaluate(valid_y, pred_valid)
 
         print(last_valid_score)
-        # preliminary_results += steps
         x_progress = train_x.copy()
         y_progress = train_y.copy()
         turns = 0
         while turns < 50:
-            # applyShifts(x_progress, y_progress, preliminary_results, all_boundaries)
-
             # determine model improvements over potential lag shifts
             for i, (column_begin, column_end) in enumerate(self.all_boundaries):
+                # dont allow lag to go to the future
                 if (preliminary_results[i]+self.step*directions[i]) < 0:
                     directions[i] = switch(directions[i])
                     continue
