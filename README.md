@@ -1,20 +1,6 @@
 # ADAML-Project1
 Mining Process Level A3
-
---add project description-- #
-
-Notes: 
-  - Week 6 will be heavy
-  - after every week, done tasks will be deleted 
-
 Weekly to do's: 
-Week 6: Initial model results 
-  (we get some extra points because  our task is more difficult) 
-  - incorporate feedback of week 5
-  - code (correct, efficient and usable)
-  - reporting (readable, complete and presentable; maybe we need to do a presentation)
-  - modelling correctness (use testing parameters like accuracy, ...)
-  - achieving the modelling goal
 
 Week 7: Give other groups feedback 
   - suggest on how to improve the report content
